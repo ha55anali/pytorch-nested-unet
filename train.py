@@ -15,6 +15,8 @@ from sklearn.model_selection import train_test_split
 from torch.optim import lr_scheduler
 from tqdm import tqdm
 
+from torch.utils.tensorboard import SummaryWriter
+
 import archs
 import losses
 from dataset import Dataset
@@ -185,6 +187,11 @@ def validate(config, val_loader, model, criterion):
     return OrderedDict([('loss', avg_meters['loss'].avg),
                         ('iou', avg_meters['iou'].avg)])
 
+def write_to_tensorboard(writer, epoch, train_log, val_log):
+    writer.add_scalar('train/loss', train_log['loss'], epoch)
+    writer.add_scalar('train/iou', train_log['iou'], epoch)
+    writer.add_scalar('test/iou', val_log['iou'], epoch)
+    writer.add_scalar('test/iou', val_log['iou'], epoch)
 
 def main():
     config = vars(parse_args())
@@ -305,6 +312,8 @@ def main():
         ('val_iou', []),
     ])
 
+    writer = SummaryWriter()
+
     best_iou = 0
     trigger = 0
     for epoch in range(config['epochs']):
@@ -329,6 +338,8 @@ def main():
         log['iou'].append(train_log['iou'])
         log['val_loss'].append(val_log['loss'])
         log['val_iou'].append(val_log['iou'])
+
+        write_to_tensorboard(writer, epoch, train_log, val_log)
 
         pd.DataFrame(log).to_csv('models/%s/log.csv' %
                                  config['name'], index=False)

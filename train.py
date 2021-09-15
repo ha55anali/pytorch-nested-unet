@@ -250,19 +250,19 @@ def main():
     train_img_ids, val_img_ids = train_test_split(img_ids, test_size=0.2, random_state=41)
 
     train_transform = Compose([
-        transforms.RandomRotate90(),
+        #transforms.RandomRotate90(),
         transforms.Flip(),
         OneOf([
             transforms.HueSaturationValue(),
             transforms.RandomBrightness(),
             transforms.RandomContrast(),
         ], p=1),
-        transforms.Resize(config['input_h'], config['input_w']),
+        #transforms.Resize(config['input_h'], config['input_w']),
         transforms.Normalize(),
     ])
 
     val_transform = Compose([
-        transforms.Resize(config['input_h'], config['input_w']),
+        #transforms.Resize(config['input_h'], config['input_w']),
         transforms.Normalize(),
     ])
 
@@ -287,13 +287,13 @@ def main():
         train_dataset,
         batch_size=config['batch_size'],
         shuffle=True,
-        num_workers=config['num_workers'],
+        num_workers=0,#config['num_workers'],
         drop_last=True)
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size=config['batch_size'],
         shuffle=False,
-        num_workers=config['num_workers'],
+        num_workers=0,#config['num_workers'],
         drop_last=False)
 
     log = OrderedDict([

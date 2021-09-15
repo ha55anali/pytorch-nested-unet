@@ -16,6 +16,8 @@ from dataset import Dataset
 from metrics import iou_score
 from utils import AverageMeter
 
+import cv2
+import numpy as np
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -29,6 +31,9 @@ def parse_args():
 
 
 def main():
+    save_dir="output"
+    os.makedirs(save_dir, exist_ok=True)
+
     args = parse_args()
 
     with open('models/%s/config.yml' % args.name, 'r') as f:
@@ -55,12 +60,12 @@ def main():
 
     _, val_img_ids = train_test_split(img_ids, test_size=0.2, random_state=41)
 
-    model.load_state_dict(torch.load('models/%s/model.pth' %
+    model.load_state_dict(torch.load('models%s/model.pth' %
                                      config['name']))
     model.eval()
 
     val_transform = Compose([
-        transforms.Resize(config['input_h'], config['input_w']),
+        #transforms.Resize(config['input_h'], config['input_w']),
         transforms.Normalize(),
     ])
 
@@ -71,7 +76,8 @@ def main():
         img_ext=config['img_ext'],
         mask_ext=config['mask_ext'],
         num_classes=config['num_classes'],
-        transform=val_transform)
+        transform=val_transform,
+        save_path=save_dir)
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size=config['batch_size'],
@@ -83,6 +89,8 @@ def main():
 
     for c in range(config['num_classes']):
         os.makedirs(os.path.join('outputs', config['name'], str(c)), exist_ok=True)
+    pred_count=[0]
+    target_count=[0]
     with torch.no_grad():
         for input, target, meta in tqdm(val_loader, total=len(val_loader)):
             input = input.cuda()
@@ -93,6 +101,23 @@ def main():
                 output = model(input)[-1]
             else:
                 output = model(input)
+
+            def write_img(save_dir, count, name, img, is_rgb=False):
+                temp_img=np.array(img.cpu().permute(0,2,3,1))
+
+                for i in range(temp_img.shape[0]):
+                    count[0]+=1
+                    
+                    cv2.imwrite(
+                        os.path.join(save_dir, f"{count[0]}_{name}.png"),
+                        temp_img[i]
+                    )
+
+            #rite_img(save_dir, count, "image",input)
+            write_img(save_dir, target_count, "real_mask",target)
+            write_img(save_dir, pred_count, "predicted_mask",output)
+    
+
 
             iou = iou_score(output, target)
             avg_meter.update(iou, input.size(0))

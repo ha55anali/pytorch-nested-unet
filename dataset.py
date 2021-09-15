@@ -7,7 +7,7 @@ import torch.utils.data
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, img_ids, img_dir, mask_dir, img_ext, mask_ext, num_classes, transform=None):
+    def __init__(self, img_ids, img_dir, mask_dir, img_ext, mask_ext, num_classes, transform=None, save_path=None):
         """
         Args:
             img_ids (list): Image ids.
@@ -48,6 +48,7 @@ class Dataset(torch.utils.data.Dataset):
         self.mask_ext = mask_ext
         self.num_classes = num_classes
         self.transform = transform
+        self.save_path=save_path
 
     def __len__(self):
         return len(self.img_ids)
@@ -57,10 +58,14 @@ class Dataset(torch.utils.data.Dataset):
         
         img = cv2.imread(os.path.join(self.img_dir, img_id + self.img_ext))
 
+        if self.save_path!=None:
+            cv2.imwrite(os.path.join(self.save_path, f'{idx}_img.png'),img)
+
         mask = []
         for i in range(self.num_classes):
+
             mask.append(cv2.imread(os.path.join(self.mask_dir, str(i),
-                        img_id + self.mask_ext), cv2.IMREAD_GRAYSCALE)[..., None])
+                        img_id +"_mask"+ self.mask_ext), cv2.IMREAD_GRAYSCALE)[..., None])
         mask = np.dstack(mask)
 
         if self.transform is not None:
